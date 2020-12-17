@@ -6,22 +6,28 @@ let grid = [];
 let setStart=null;
 let setEnd=null;
 let tileType='start';
+let dragging=false;
 
 function setup() {
-  canvas=createCanvas(gridSize, gridSize);
+  cursor('cursors/pencil.cur');
+  const canvas=createCanvas(gridSize, gridSize);
   canvas.mousePressed(changeTiles);
   
   startBtn=createButton('Maze Start');
   startBtn.addClass('button');
-  startBtn.mouseClicked(()=>tileType='start')
+  startBtn.mouseClicked(()=>{tileType='start'; cursor('cursors/pencil.cur')})
 
   endBtn=createButton('Maze End');
   endBtn.addClass('button');
-  endBtn.mouseClicked(()=>tileType='end');
+  endBtn.mouseClicked(()=>{tileType='end'; cursor('cursors/pencil.cur')});
 
   wallBtn=createButton('Maze Walls');
   wallBtn.addClass('button');
-  wallBtn.mouseClicked(()=>tileType='wall');
+  wallBtn.mouseClicked(()=>{tileType='wall'; cursor('cursors/pencil.cur')});
+
+  wallBtn=createButton('Eraser');
+  wallBtn.addClass('button');
+  wallBtn.mouseClicked(()=>{tileType='erase'; cursor('cursors/eraser.cur')});
 
   intiateGrid();
 }
@@ -60,16 +66,25 @@ function changeTiles(){
     case 'wall':
       handleWall(X,Y);
       break;
+    case 'erase':
+      handleErase(X,Y);
+      break;
   }
 }
 
 
-function handleStart(X,Y){
-  if(grid[Y][X] instanceof StartPoint){
-    setStart=null;
-    grid[Y][X]=new Tile(Y,X,tileSize);
+function handleErase(X,Y){
+  if(grid[Y][X] instanceof EndPoint){
+    setEnd=null;
   }
-  else if(setStart===null){
+  else if(grid[Y][X] instanceof StartPoint){
+    setStart=null;
+  }
+  grid[Y][X]=new Tile(Y,X,tileSize);
+}
+
+function handleStart(X,Y){
+  if(setStart===null){
     if(grid[Y][X] instanceof EndPoint){
       setEnd=null;
     }
@@ -79,11 +94,7 @@ function handleStart(X,Y){
 }
 
 function handleEnd(X,Y){
-  if(grid[Y][X] instanceof EndPoint){
-    setEnd=null;
-    grid[Y][X]=new Tile(Y,X,tileSize);
-  }
-  else if(setEnd===null){
+  if(setEnd===null){
     if(grid[Y][X] instanceof StartPoint){
       setStart=null;
     }
@@ -96,16 +107,21 @@ function handleEnd(X,Y){
 function handleWall(X,Y){
   if(grid[Y][X] instanceof StartPoint){
     setStart=null;
-    grid[Y][X]=new Wall(Y,X,tileSize);
   }
   else if(grid[Y][X] instanceof EndPoint){
     setEnd=null;
-    grid[Y][X]=new Wall(Y,X,tileSize);
   }
-  else if(grid[Y][X]instanceof Wall){
-    grid[Y][X]=new Tile(Y,X,tileSize);
+  grid[Y][X]=new Wall(Y,X,tileSize);
+}
+
+
+function mouseDragged() {
+  const X = floor(mouseX/tileSize);
+  const Y = floor(mouseY/tileSize);
+  if(tileType==='wall'){
+    handleWall(X,Y);
   }
-  else{
-    grid[Y][X]=new Wall(Y,X,tileSize);
+  else if(tileType==='erase'){
+    handleErase(X,Y);
   }
 }
