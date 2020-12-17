@@ -1,0 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap');
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+canvas {
+  display: block;
+}
+
+button:focus {outline:0;}
+
+.button{
+  margin-top: 10px;
+  margin-left: 2px;
+  margin-right: 8px;
+  border: 0.2px 0.2px black;
+  background-color: aliceblue;
+  font-family: 'Roboto', sans-serif;
+  font-size: 20px;
+  border-radius: 100px;
+}
