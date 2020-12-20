@@ -1,8 +1,9 @@
-const tiles = 12;
-const tileSize=55;
+const tiles = 20;
+const tileSize=40;
 const gridSize=tiles*tileSize;
 
 let grid = [];
+let openSet=[];
 let setStart=null;
 let setEnd=null;
 let tileType='start';
@@ -29,6 +30,10 @@ function setup() {
   wallBtn.addClass('button');
   wallBtn.mouseClicked(()=>{tileType='erase'; cursor('cursors/eraser.cur')});
 
+  pathBtn=createButton('Find Path');
+  pathBtn.addClass('button');
+  pathBtn.mouseClicked(findPath);
+
   intiateGrid();
 }
 
@@ -37,6 +42,9 @@ function draw() {
   drawGrid();
 }
 
+function heuristic(a,b){
+  dist(a.i,a.j,b.i,b.j);
+}
 
 function intiateGrid(){
   for(let i=0;i<tiles;i++){
@@ -72,7 +80,6 @@ function changeTiles(){
   }
 }
 
-
 function handleErase(X,Y){
   if(grid[Y][X] instanceof EndPoint){
     setEnd=null;
@@ -82,27 +89,6 @@ function handleErase(X,Y){
   }
   grid[Y][X]=new Tile(Y,X,tileSize);
 }
-
-function handleStart(X,Y){
-  if(setStart===null){
-    if(grid[Y][X] instanceof EndPoint){
-      setEnd=null;
-    }
-    grid[Y][X]= new StartPoint(Y,X,tileSize);
-    setStart = {X:X,Y:Y};
-  }
-}
-
-function handleEnd(X,Y){
-  if(setEnd===null){
-    if(grid[Y][X] instanceof StartPoint){
-      setStart=null;
-    }
-    grid[Y][X]= new EndPoint(Y,X,tileSize);
-    setEnd = {X:X,Y:Y};
-  }
-}
-
 
 function handleWall(X,Y){
   if(grid[Y][X] instanceof StartPoint){
@@ -123,5 +109,97 @@ function mouseDragged() {
   }
   else if(tileType==='erase'){
     handleErase(X,Y);
+  }
+}
+
+function handleStart(X,Y){
+  if(setStart===null){
+    if(grid[Y][X] instanceof EndPoint){
+      setEnd=null;
+    }
+    grid[Y][X] = new StartPoint(Y,X,tileSize,grid[Y][X].neighbors);
+    setStart = grid[Y][X];
+  }
+}
+
+function handleEnd(X,Y){
+  if(setEnd===null){
+    if(grid[Y][X] instanceof StartPoint){
+      setStart=null;
+    }
+    grid[Y][X] = new EndPoint(Y,X,tileSize);
+    setEnd = grid[Y][X];
+  }
+}
+
+
+
+
+function findPath(){
+  grid.forEach(row=>row.forEach(
+    (tile)=>{
+      tile.addNeighbors();
+      if(tile instanceof Path){
+        grid[tile.i][tile.j]=new Tile(tile.i,tile.j,tileSize);
+      }
+    }));
+  if(setStart!=null && setEnd!=null){
+    setStart.previous='none';
+    let openSet=[setStart];
+    let closedSet=[];
+    console.log("START");
+    while(openSet.length>0){
+      console.log(openSet);
+      winner=0;
+      
+      for(var i=0;i<openSet.length;i++){
+        if(openSet[i].f<openSet[winner].f){
+          winner=i;
+        }
+      }
+      current = openSet[winner];
+      if(current===setEnd){
+        console.log('DONE');
+        while(current.previous!='none'){
+          if((current instanceof EndPoint)===false){
+            grid[current.i][current.j]=new Path(current.i,current.j,tileSize);
+          }
+          current=current.previous;
+        }
+        foundPath=true;
+        break;
+      }
+
+      openSet.splice(current,1);
+      closedSet.push(current);
+
+      current.neighbors.forEach(
+        (neighbor)=>{
+          tempG = current.g+heuristic(current,neighbor);
+
+          if(!closedSet.includes(neighbor) && (neighbor instanceof Wall) === false){
+            tempG = current.g+ heuristic(current,neighbor);
+
+            if(!openSet.includes(neighbor)){
+              neighbor.h=heuristic(neighbor,setEnd);
+              neighbor.f=neighbor.g+neighbor.h;
+              neighbor.g=tempG;
+              openSet.includes(neighbor);
+              neighbor.previous = current;
+              openSet.push(neighbor);
+            }
+            else{
+              if(tempG<neighbor.g){
+                neighbor.h=heuristic(neighbor,setEnd);
+                neighbor.f=neighbor.g+neighbor.h;
+                neighbor.g=tempG;
+                openSet.includes(neighbor);
+                neighbor.previous = current;
+              }
+            }
+          }
+        }
+      )
+    }
   }
 }
